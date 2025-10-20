@@ -135,24 +135,29 @@ public class ModuleChargeDistributionUnit implements ICustomModule<ModuleChargeD
 
     public boolean canCharge(ItemStack stack, IModule<ModuleChargeDistributionUnit> module, EntityPlayer player) {
         if (!stack.isEmpty() && module.getContainerEnergy() > 0) {
-            if (stack.getItem() instanceof IEnergizedItem) {
-                return module.canUseEnergy(player, EnergizedItemManager.charge(stack, module.getContainerEnergy()));
+            if (stack.getItem() instanceof IEnergizedItem energizedItem) {
+                if (energizedItem.canReceive(stack)) {
+                    double energyToSend = Math.min(energizedItem.getMaxTransfer(stack),
+                            Math.min(energizedItem.getMaxEnergy(stack) - energizedItem.getEnergy(stack), module.getContainerEnergy()));
+                    return module.canUseEnergy(player, energyToSend);
+                }
+                return false;
             } else if (MekanismUtils.useTesla() && stack.hasCapability(Capabilities.TESLA_CONSUMER_CAPABILITY, null)) {
                 ITeslaConsumer consumer = stack.getCapability(Capabilities.TESLA_CONSUMER_CAPABILITY, null);
                 long stored = TeslaIntegration.toTesla(module.getContainerEnergy());
-                return module.canUseEnergy(player, TeslaIntegration.fromTesla(consumer.givePower(stored, false)));
+                return module.canUseEnergy(player, TeslaIntegration.fromTesla(consumer.givePower(stored, true)));
             } else if (MekanismUtils.useForge() && stack.hasCapability(CapabilityEnergy.ENERGY, null)) {
                 IEnergyStorage storage = stack.getCapability(CapabilityEnergy.ENERGY, null);
                 if (storage.canReceive()) {
                     int stored = ForgeEnergyIntegration.toForge(module.getContainerEnergy());
-                    return module.canUseEnergy(player, ForgeEnergyIntegration.fromForge(storage.receiveEnergy(stored, false)));
+                    return module.canUseEnergy(player, ForgeEnergyIntegration.fromForge(storage.receiveEnergy(stored, true)));
                 }
                 return false;
             } else if (MekanismUtils.useRF() && stack.getItem() instanceof IEnergyContainerItem item) {
                 int toTransfer = RFIntegration.toRF(module.getContainerEnergy());
-                return module.canUseEnergy(player, RFIntegration.fromRF(item.receiveEnergy(stack, toTransfer, false)));
+                return module.canUseEnergy(player, RFIntegration.fromRF(item.receiveEnergy(stack, toTransfer, true)));
             } else if (MekanismUtils.useIC2() && isIC2Chargeable(stack)) {
-                double sent = IC2Integration.fromEU(ElectricItem.manager.charge(stack, IC2Integration.toEU(module.getContainerEnergy()), 4, true, false));
+                double sent = IC2Integration.fromEU(ElectricItem.manager.charge(stack, IC2Integration.toEU(module.getContainerEnergy()), 4, true, true));
                 return module.canUseEnergy(player, sent);
             }
         }
