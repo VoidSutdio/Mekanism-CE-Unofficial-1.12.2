@@ -385,7 +385,7 @@ public abstract class ItemMekaSuitArmor extends ItemArmor implements IEnergizedI
     public int receiveEnergy(ItemStack stack, int energy, boolean simulate) {
         if (canReceive(stack)) {
             double energyNeeded = getMaxEnergy(stack) - getEnergy(stack);
-            double toReceive = Math.min(RFIntegration.fromRF(energy), energyNeeded);
+            double toReceive = Math.min(RFIntegration.fromRF(energy), Math.min(energyNeeded, getMaxTransfer(stack)));
             if (!simulate) {
                 setEnergy(stack, getEnergy(stack) + toReceive);
             }
@@ -399,7 +399,7 @@ public abstract class ItemMekaSuitArmor extends ItemArmor implements IEnergizedI
     public int extractEnergy(ItemStack theItem, int energy, boolean simulate) {
         if (canSend(theItem)) {
             double energyRemaining = getEnergy(theItem);
-            double toSend = Math.min(RFIntegration.fromRF(energy), energyRemaining);
+            double toSend = Math.min(RFIntegration.fromRF(energy), Math.min(energyRemaining, getMaxTransfer(theItem)));
             if (!simulate) {
                 setEnergy(theItem, getEnergy(theItem) - toSend);
             }
