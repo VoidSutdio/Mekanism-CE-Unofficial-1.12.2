@@ -291,7 +291,7 @@ public final class MekanismUtils {
     }
 
     public static float fractionUpgrades(IUpgradeTile mgmt, Upgrade type) {
-        return (float) mgmt.getComponent().getUpgrades(type) / (float) type.getMax();
+        return (float) mgmt.getComponent().getUpgrades(type) / (float) type.getMaxInstalled();
     }
 
     /**
@@ -344,11 +344,26 @@ public final class MekanismUtils {
      * @return max secondary energy per tick
      */
     public static double getSecondaryEnergyPerTickMean(IUpgradeTile mgmt, int def) {
-        if (mgmt.getComponent().supports(Upgrade.GAS)) {
+        if (mgmt.supportsUpgrade(Upgrade.GAS)) {
             return def * Math.pow(MekanismConfig.current().general.maxUpgradeMultiplier.val(), 2 * fractionUpgrades(mgmt, Upgrade.SPEED) - fractionUpgrades(mgmt, Upgrade.GAS));
         }
         return def * Math.pow(MekanismConfig.current().general.maxUpgradeMultiplier.val(), fractionUpgrades(mgmt, Upgrade.SPEED));
     }
+
+    public static long getBaseUsage(IUpgradeTile tile, int def) {
+        if (tile.supportsUpgrades()) {
+            //getGasPerTickMean * required ticks (not rounded)
+            if (tile.supportsUpgrade(Upgrade.GAS)) {
+                // def * (upgradeMultiplier ^ ((2 * speed - gas) / 8)) * (upgradeMultiplier ^ (-speed / 8)) =
+                // def * upgradeMultiplier ^ ((speed - gas) / 8)
+                //TODO: We may want to validate this provides the numbers we desire if we ever end up with any machines
+                // that use this that are not statistical and have gas upgrades so would go through this code path
+                return Math.round(def * Math.pow(MekanismConfig.current().general.maxUpgradeMultiplier.val(),   fractionUpgrades(tile, Upgrade.SPEED) - fractionUpgrades(tile, Upgrade.GAS)));
+            }
+        }
+        return def;
+    }
+
 
     /**
      * Gets the maximum energy for a machine via it's upgrades.
@@ -375,7 +390,7 @@ public final class MekanismUtils {
     public static double getMaxEnergy(ItemStack itemStack, double def) {
         Map<Upgrade, Integer> upgrades = Upgrade.buildMap(ItemDataUtils.getDataMap(itemStack));
         float numUpgrades = upgrades.get(Upgrade.ENERGY) == null ? 0 : (float) upgrades.get(Upgrade.ENERGY);
-        return def * Math.pow(MekanismConfig.current().general.maxUpgradeMultiplier.val(), numUpgrades / (float) Upgrade.ENERGY.getMax());
+        return def * Math.pow(MekanismConfig.current().general.maxUpgradeMultiplier.val(), numUpgrades / (float) Upgrade.ENERGY.getMaxInstalled());
     }
 
 
@@ -1152,7 +1167,9 @@ public final class MekanismUtils {
         TEXTURE_ITEMS("textures/items"),
         MODEL("models"),
         INFUSE("infuse"),
-        ARMOR("armor");
+        ARMOR("armor"),
+        RENDER_MACHINE("render/machine"),
+        ;
 
 
         private String prefix;
@@ -1377,6 +1394,9 @@ public final class MekanismUtils {
     public interface VeinEnergyFunction {
         double calc(float hardness, int distance, IBlockState state);
     }
+
+
+
 
 }
 

@@ -2,15 +2,19 @@ package mekanism.common;
 
 
 import mekanism.api.EnumColor;
-import mekanism.api.gas.GasRegistry;
-import mekanism.api.gas.GasStack;
-import mekanism.api.gas.OreGas;
+import mekanism.api.energy.IEnergizedItem;
+import mekanism.api.gas.*;
 import mekanism.api.infuse.InfuseObject;
 import mekanism.api.infuse.InfuseRegistry;
 import mekanism.api.infuse.InfuseType;
 import mekanism.common.block.states.BlockStateMachine;
 import mekanism.common.config.MekanismConfig;
+import mekanism.common.content.gear.IModuleContainerItem;
+import mekanism.common.item.armor.ItemMekaSuitBodyArmor;
+import mekanism.common.item.armor.ItemMekaSuitHelmet;
 import mekanism.common.recipe.RecipeHandler;
+import mekanism.common.recipe.inputs.ItemStackInput;
+import mekanism.common.util.GasUtils;
 import mekanism.common.util.StackUtils;
 import net.minecraft.block.BlockCrops;
 import net.minecraft.init.Blocks;
@@ -192,7 +196,7 @@ public class MekanismRecipe {
             RecipeHandler.addPrecisionSawmillRecipe(new ItemStack(Blocks.JUNGLE_FENCE_GATE), new ItemStack(Blocks.PLANKS, 2, 3), new ItemStack(Items.STICK, 4), 1);
             RecipeHandler.addPrecisionSawmillRecipe(new ItemStack(Blocks.ACACIA_FENCE_GATE), new ItemStack(Blocks.PLANKS, 2, 4), new ItemStack(Items.STICK, 4), 1);
             RecipeHandler.addPrecisionSawmillRecipe(new ItemStack(Blocks.DARK_OAK_FENCE_GATE), new ItemStack(Blocks.PLANKS, 2, 5), new ItemStack(Items.STICK, 4), 1);
-            RecipeHandler.addPrecisionSawmillRecipe(new ItemStack(Blocks.MELON_BLOCK),new ItemStack(Items.MELON,9));
+            RecipeHandler.addPrecisionSawmillRecipe(new ItemStack(Blocks.MELON_BLOCK), new ItemStack(Items.MELON, 9));
         }
 
         if (MekanismConfig.current().general.machinesManager.isEnabled(BlockStateMachine.MachineType.METALLURGIC_INFUSER)) {
@@ -268,7 +272,7 @@ public class MekanismRecipe {
         }
         //Chemical Washer Recipes
         if (MekanismConfig.current().general.machinesManager.isEnabled(BlockStateMachine.MachineType.CHEMICAL_WASHER)) {
-            RecipeHandler.addChemicalWasherRecipe(new GasStack(MekanismFluids.FissileFuel, 1000), new GasStack(MekanismFluids.NuclearWaste, 1));
+            RecipeHandler.addChemicalWasherRecipe(new GasStack(MekanismFluids.FissileFuel, 1000), new FluidStack(FluidRegistry.WATER, 1000), new GasStack(MekanismFluids.NuclearWaste, 1));
         }
         //Chemical Dissolution Chamber Recipes
         if (MekanismConfig.current().general.machinesManager.isEnabled(BlockStateMachine.MachineType.CHEMICAL_DISSOLUTION_CHAMBER)) {
@@ -317,7 +321,8 @@ public class MekanismRecipe {
         }
 
         //Fuel Gases
-        FuelHandler.addGas(MekanismFluids.Hydrogen, 1, MekanismConfig.current().general.FROM_H2.val());
+        // FuelHandler.addGas(MekanismFluids.Hydrogen, 1, MekanismConfig.current().general.FROM_H2.val());
+        RecipeHandler.addGasStackFuelToEnergyRecipe(new GasStack(MekanismFluids.Hydrogen, 1), MekanismConfig.current().general.FROM_H2.val());
 
         //Chemical Oxidizer Recipes
         if (MekanismConfig.current().general.machinesManager.isEnabled(BlockStateMachine.MachineType.CHEMICAL_OXIDIZER)) {
@@ -461,13 +466,19 @@ public class MekanismRecipe {
             } else {
                 RecipeHandler.addRecyclerRecipe(new ItemStack(Blocks.STONE));
             }
+            ItemStack Substrate = new ItemStack(MekanismItems.Substrate);
+            if (RecipeHandler.Recipe.RECYCLER.containsRecipe(Substrate)) {
+                RecipeHandler.Recipe.RECYCLER.remove(RecipeHandler.Recipe.RECYCLER.get().get(new ItemStackInput(Substrate)));
+                RecipeHandler.addRecyclerRecipe(Substrate, 0.5);
+            }
         }
 
         if (MekanismConfig.current().general.machinesManager.isEnabled(BlockStateMachine.MachineType.AMBIENT_ACCUMULATOR) || MekanismConfig.current().general.machinesManager.isEnabled(BlockStateMachine.MachineType.AMBIENT_ACCUMULATOR_ENERGY)) {
             //遍历所有维度来生成配方
-            DimensionManager.getRegisteredDimensions().keySet().forEach(dimensionType -> RecipeHandler.addAmbientGas(dimensionType.getId()));
+            if (MekanismConfig.current().general.EnableDefaultAllAddAmbientGas.val()) {
+                DimensionManager.getRegisteredDimensions().keySet().stream().filter(dimensionType -> !MekanismConfig.current().general.defaultAmbientDimBlacklist.val().contains(dimensionType.getId())).forEach(dimensionType -> RecipeHandler.addAmbientGas(dimensionType.getId()));
+            }
         }
-
         RecipeHandler.addItemStackToEnergyRecipe(new ItemStack(Items.REDSTONE), MekanismConfig.current().general.ENERGY_PER_REDSTONE.val());
         RecipeHandler.addItemStackToEnergyRecipe(new ItemStack(Blocks.REDSTONE_BLOCK), MekanismConfig.current().general.ENERGY_PER_REDSTONE_BLOCK.val());
         /**
@@ -495,6 +506,51 @@ public class MekanismRecipe {
         }
         return stacks;
     }
+
+
+    public static void SuperFumoReciperRegister() {
+        ItemStack SuperFumo = new ItemStack(MekanismBlocks.SuperFumo);
+        ItemStack helmet = new ItemStack(MekanismItems.MEKASUIT_HELMET);
+        ItemStack bodyarmor = new ItemStack(MekanismItems.MEKASUIT_BODYARMOR);
+        ItemStack pants = new ItemStack(MekanismItems.MEKASUIT_PANTS);
+        ItemStack boots = new ItemStack(MekanismItems.MEKASUIT_BOOTS);
+        ItemStack tool = new ItemStack(MekanismItems.MEKA_TOOL);
+
+        addAllModule(helmet);
+        addAllModule(bodyarmor);
+        addAllModule(pants);
+        addAllModule(boots);
+        addAllModule(tool);
+
+        addEnergy(helmet);
+        addEnergy(bodyarmor);
+        addEnergy(pants);
+        addEnergy(boots);
+        addEnergy(tool);
+
+        if (helmet.getItem() instanceof ItemMekaSuitHelmet item){
+            item.setGas(helmet, new GasStack(MekanismFluids.NutritionalPaste, item.getMaxGas(helmet)));
+        }
+        if (bodyarmor.getItem() instanceof ItemMekaSuitBodyArmor item){
+            item.setGas(bodyarmor, new GasStack(MekanismFluids.Hydrogen, item.getMaxGas(bodyarmor)));
+        }
+
+        GameRegistry.addShapedRecipe(Mekanism.rl("super_fumo"), null, SuperFumo, "A B", " C ", "D E", 'A', helmet, 'B', bodyarmor, 'C', tool, 'D', pants, 'E', boots);
+    }
+
+
+    public static void addAllModule(ItemStack stack){
+        if (stack.getItem() instanceof IModuleContainerItem item) {
+            item.setAllModule(stack);
+        }
+    }
+
+    public static void addEnergy(ItemStack stack){
+        if (stack.getItem() instanceof IEnergizedItem item) {
+            item.setEnergy(stack, item.getMaxEnergy(stack));
+        }
+    }
+
 
 
 }
