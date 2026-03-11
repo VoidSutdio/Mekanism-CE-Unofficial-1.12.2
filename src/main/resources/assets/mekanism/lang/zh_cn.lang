@@ -987,6 +987,7 @@ mekanism.tooltip.mektool.off=关
 tooltip.configurationCard.got=已从%s获取配置数据
 tooltip.configurationCard.set=已导入%s的配置数据
 tooltip.configurationCard.unequal=配置格式不符规则
+tooltip.configuration_card.mekanism.cleared=已清除配置卡
 
 tooltip.balloon=气球
 
@@ -2174,3 +2175,4 @@ death.attack.mekanism.smartattackdamage.player=%s 在试图逃离 %s 时被 %s �
 chemical.mekanism.attribute.radiation= - 放射性：
 
 tile.SuperFumo.name=超级FuMo
+mekanism.module.info=利用改造站，可以将模块安装在多种MekaSuit装备以及Meka工具上

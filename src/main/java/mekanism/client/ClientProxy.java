@@ -11,6 +11,7 @@ import mekanism.client.gui.chemical.*;
 import mekanism.client.gui.robit.*;
 import mekanism.client.newgui.GuiModuleTweaker;
 import mekanism.client.render.MekanismRenderer;
+import mekanism.client.render.RenderArm;
 import mekanism.client.render.RenderFirstPersonMekaSuitArms;
 import mekanism.client.render.RenderTickHandler;
 import mekanism.client.render.entity.RenderBalloon;
@@ -462,7 +463,7 @@ public class ClientProxy extends CommonProxy {
             String resource = "mekanism:" + type.getName();
             RecipeType recipePointer = null;
 
-            if (type == MachineType.BASIC_FACTORY || type == MachineType.ADVANCED_FACTORY || type == MachineType.ELITE_FACTORY || type == MachineType.ULTIMATE_FACTORY || type == MachineType.CREATIVE_FACTORY) {
+            if (type.isFactory()) {
                 recipePointer = RecipeType.values()[0];
                 resource = "mekanism:" + type.getName() + "_" + recipePointer.getName();
             }
@@ -482,7 +483,7 @@ public class ClientProxy extends CommonProxy {
                     machineResources.put(resource, model);
                     modelsToAdd.add(model);
 
-                    if (type == MachineType.BASIC_FACTORY || type == MachineType.ADVANCED_FACTORY || type == MachineType.ELITE_FACTORY || type == MachineType.ULTIMATE_FACTORY || type == MachineType.CREATIVE_FACTORY) {
+                    if (type.isFactory()) {
                         if (recipePointer.ordinal() < RecipeType.values().length - 1) {
                             recipePointer = RecipeType.values()[recipePointer.ordinal() + 1];
                             resource = "mekanism:" + type.getName() + "_" + recipePointer.getName();
@@ -592,7 +593,7 @@ public class ClientProxy extends CommonProxy {
             MachineType type = MachineType.get(stack);
             if (type != null) {
                 String resource = "mekanism:" + type.getName();
-                if (type == MachineType.BASIC_FACTORY || type == MachineType.ADVANCED_FACTORY || type == MachineType.ELITE_FACTORY || type == MachineType.ULTIMATE_FACTORY || type == MachineType.CREATIVE_FACTORY) {
+                if (type.isFactory()) {
                     RecipeType recipe = ((ItemBlockMachine) stack.getItem()).getRecipeTypeOrNull(stack);
                     if (recipe != null) {
                         resource = "mekanism:" + type.getName() + "_" + recipe.getName();
@@ -932,7 +933,13 @@ public class ClientProxy extends CommonProxy {
         MinecraftForge.EVENT_BUS.register(new ClientConnectionHandler());
         //  MinecraftForge.EVENT_BUS.register(new ClientPlayerTracker());
         MinecraftForge.EVENT_BUS.register(new ClientTickHandler());
-        MinecraftForge.EVENT_BUS.register(new RenderFirstPersonMekaSuitArms());
+        //单检查到Cleanroom的时候，使用Cleanroom的盔甲渲染事件
+        if (Mekanism.hooks.CLEANROOM){
+            MinecraftForge.EVENT_BUS.register(new RenderArm());
+        }else {
+            MinecraftForge.EVENT_BUS.register(new RenderFirstPersonMekaSuitArms());
+        }
+
         MinecraftForge.EVENT_BUS.register(new RenderTickHandler());
         MinecraftForge.EVENT_BUS.register(SoundHandler.class);
 

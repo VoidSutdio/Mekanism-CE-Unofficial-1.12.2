@@ -6,6 +6,7 @@ import com.google.common.collect.Maps;
 import mekanism.api.gas.Gas;
 import mekanism.api.gas.GasRegistry;
 import mekanism.api.gas.GasStack;
+import mekanism.api.gear.ModuleData;
 import mekanism.client.gui.element.GuiProgress.ProgressBar;
 import mekanism.client.jei.gas.GasStackRenderer;
 import mekanism.client.jei.machine.*;
@@ -19,14 +20,17 @@ import mekanism.common.base.IFactory.RecipeType;
 import mekanism.common.base.ITierItem;
 import mekanism.common.block.states.BlockStateMachine.MachineType;
 import mekanism.common.config.MekanismConfig;
+import mekanism.common.content.gear.ModuleHelper;
 import mekanism.common.inventory.container.robit.ContainerRobitInventory;
 import mekanism.common.item.ItemBlockEnergyCube;
 import mekanism.common.item.ItemBlockGasTank;
 import mekanism.common.recipe.RecipeHandler.Recipe;
+import mekanism.common.util.LangUtils;
 import mezz.jei.api.*;
 import mezz.jei.api.ISubtypeRegistry.ISubtypeInterpreter;
 import mezz.jei.api.ingredients.IIngredientBlacklist;
 import mezz.jei.api.ingredients.IModIngredientRegistration;
+import mezz.jei.api.ingredients.VanillaTypes;
 import mezz.jei.api.recipe.IIngredientType;
 import mezz.jei.api.recipe.IRecipeCategoryRegistration;
 import mezz.jei.api.recipe.IVanillaRecipeFactory;
@@ -35,10 +39,7 @@ import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraftforge.fluids.Fluid;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @JEIPlugin
@@ -247,5 +248,12 @@ public class MekanismJEI implements IModPlugin {
          * ADD END
          */
 
+        registry.addIngredientInfo(
+                ModuleHelper.INSTANCE.getAll().stream()
+                        .filter(Objects::nonNull)
+                        .map(ModuleData::getStack)
+                        .filter(stack -> stack != null && !stack.isEmpty() && stack.getItem().getRegistryName() != null && !stack.getItem().equals(MekanismItems.ModuleBase))
+                        .collect(Collectors.toList())
+                , VanillaTypes.ITEM, LangUtils.localize("mekanism.module.info"));
     }
 }

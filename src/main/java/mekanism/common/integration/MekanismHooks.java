@@ -29,6 +29,7 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.util.NonNullList;
 import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.fml.common.Loader;
+import net.minecraftforge.fml.common.ModContainer;
 import net.minecraftforge.fml.common.Optional.Method;
 import net.minecraftforge.fml.common.event.FMLInterModComms;
 import net.minecraftforge.fml.common.registry.ForgeRegistries;
@@ -73,6 +74,7 @@ public final class MekanismHooks {
     public static final String JEI_MOD_ID = "jei";
     public static final String GC_MOD_ID = "galacticraftcore";
     public static final String AR_MOD_ID = "advancedrocketry";
+    public static final String CLEANROOM_MOD_ID = "cleanroom";
 
     public boolean AE2Loaded = false;
     public boolean BuildCraftLoaded = false;
@@ -80,6 +82,7 @@ public final class MekanismHooks {
     public boolean CraftTweakerLoaded = false;
     public boolean CyclicLoaded = false;
     public boolean IC2Loaded = false;
+    public boolean IC2CLoaded = false;
     public boolean MALoaded = false;
     public boolean MCMPLoaded = false;
     public boolean MetallurgyLoaded = false;
@@ -100,6 +103,7 @@ public final class MekanismHooks {
     public boolean JEI = false;
     public boolean GC = false;
     public boolean AR = false;
+    public boolean CLEANROOM = false;
 
     public void hookPreInit() {
         AE2Loaded = Loader.isModLoaded(APPLIED_ENERGISTICS_2_MOD_ID);
@@ -132,7 +136,10 @@ public final class MekanismHooks {
         JEI = Loader.isModLoaded(JEI_MOD_ID);
         GC = Loader.isModLoaded(GC_MOD_ID);
         AR = Loader.isModLoaded(AR_MOD_ID);
+        CLEANROOM = Mods.CLR.isPresent();
+        IC2CLoaded = !Loader.instance().getActiveModList().stream().filter(container -> IC2_MOD_ID.equals(container.getModId())).map(ModContainer::getMetadata).filter(metadata -> metadata != null && metadata.version != null).anyMatch(metadata -> metadata.version.contains("ex"));
     }
+
 
     public enum Mods {
         GTCeU(GTCEU_MOD_ID) {
@@ -150,6 +157,26 @@ public final class MekanismHooks {
                 }
                 try {
                     Class.forName("gregtech.client.utils.BloomEffectUtil");
+                    return detected = true;
+                } catch (Exception e) {
+                    return detected = false;
+                }
+            }
+        },
+        CLR(CLEANROOM_MOD_ID){
+            private boolean initialized = false;
+            private boolean detected = false;
+            @Override
+            public boolean isPresent() {
+                if (initialized) {
+                    return detected;
+                }
+                initialized = true;
+                if (!super.isPresent()) {
+                    return detected = false;
+                }
+                try {
+                    Class.forName("net.minecraftforge.client.event.RenderArmEvent");
                     return detected = true;
                 } catch (Exception e) {
                     return detected = false;
