@@ -330,12 +330,15 @@ public class TileEntityLargeSolarNeutronActivator extends TileEntityContainerBlo
     @Override
     public int receiveGas(EnumFacing side, GasStack stack, boolean doTransfer) {
         if (canReceiveGas(side, stack.getGas())) {
-            int recipeAmount = RecipeHandler.Recipe.SOLAR_NEUTRON_ACTIVATOR.get().get(new GasInput(stack)).recipeInput.ingredient.amount;
-            int receivable = inputTank.receive(stack, false);
-            int stored = inputTank.stored != null ? inputTank.stored.amount : 0;
-            int newStored = stored + receivable;
-            int amount = newStored - stored - newStored % recipeAmount;
-            return inputTank.receive(stack.copy().withAmount(amount), doTransfer);
+            synchronized (this.inputTank) {
+                GasTank it = this.inputTank;
+                int recipeAmount = RecipeHandler.Recipe.SOLAR_NEUTRON_ACTIVATOR.get().get(new GasInput(stack)).recipeInput.ingredient.amount;
+                int receivable = it.receive(stack, false);
+                int stored = it.stored != null ? it.stored.amount : 0;
+                int newStored = stored + receivable;
+                int amount = newStored - stored - newStored % recipeAmount;
+                return it.receive(stack.copy().withAmount(amount), doTransfer);
+            }
         }
         return 0;
     }
